@@ -6,20 +6,9 @@ export type BoardNode<T extends TransportationTypeId> = {
     }
 }
 
-class Board<T extends TransportationTypeId> {
+export class Board<T extends TransportationTypeId> {
     constructor(
         public readonly transportations: T[],
         public readonly nodes: BoardNode<T>
     ) {}
 }
-
-new Board(
-    ["taxi", "bus", "underground", "ferry"],
-    {
-        1: {
-            taxi: [8, 9],
-            bus: [46, 58],
-            underground: [46],
-        },
-    }
-)
