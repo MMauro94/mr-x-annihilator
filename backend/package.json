@@ -1,0 +1,16 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "author": "Mauro Molin",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon src/main.ts",
+    "build": "tsc && copyfiles -u 1 \"src/resources/**\" dist"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "nodemon": "^2.0.4",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.1.3"
+  }
+}
