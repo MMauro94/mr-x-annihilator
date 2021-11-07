@@ -1,6 +1,7 @@
 import {Board} from "../utils/board";
 import {Player} from "./Player";
 import {TicketTypeId} from "../utils/transportation";
+import {last} from "../utils/array";
 
 export default class Game {
 
@@ -20,7 +21,7 @@ export default class Game {
         if (this.turns.length === 0) {
             return "mrx"
         } else {
-            const lastTurn = this.turns.at(-1)!
+            const lastTurn = last(this.turns)!
             if (lastTurn.type === "mrx") {
                 if (lastTurn.isDouble) {
                     return "mrx"
@@ -41,20 +42,20 @@ export default class Game {
     private checkNextTurn(actual: "mrx" | Player) {
         const expected = this.nextTurn()
         if (expected !== actual) {
-            const str = (item: "mrx" | Player) => item === "mrx" ? "Mr.X" : `Player ${item.name}`
+            const str = (item: "mrx" | Player) => item === "mrx" ? "Mr. X" : `Player ${item.name}`
             throw new InvalidTurnError(`${str(actual)} made a move, while it was ${str(expected)}'s turn`)
         }
     }
 
-    private getCurrentPlayerNodes(): { player: Player, node: number }[] {
+    getCurrentPlayerNodes(): { player: Player, node: number }[] {
         return this.players.map(player => {
             const node = this.getCurrentPlayerNode(player)
             return {player, node}
         })
     }
 
-    private getCurrentPlayerNode(player: Player): number {
-        const lastTurn = this.turns.filter(t => t.type === "player" && t.player == player).at(-1) as PlayerTurn | undefined
+    getCurrentPlayerNode(player: Player): number {
+        const lastTurn = last(this.turns.filter(t => t.type === "player" && t.player == player)) as PlayerTurn | undefined
         return lastTurn?.node ?? player.initialNode
     }
 
@@ -63,34 +64,26 @@ export default class Game {
         return nodes.filter(node => !currentPlayerNodes.includes(node))
     }
 
-    private getPossibleNodes(node: number, ticket: TicketTypeId) {
+    private getPossibleMoves(node: number, ticket: TicketTypeId) {
         return this.excludePlayerNodes(this.board.getLinksForTicket(node, ticket))
     }
 
-    private addMrXTurn(turn: Omit<MrXTurn, "possibleNodes" | "type">) {
+    addMrXTurn(turn: Omit<MrXTurn, "possibleNodes" | "type">) {
         // Check if it is Mr. X's turn
         this.checkNextTurn("mrx")
 
         // Calculate possible positions
         let possibleNodes: number[] = []
 
-        if (turn.node !== null) {
+        if (turn.node !== undefined) {
             // I have the current Mr. X position, no need to guess
             possibleNodes.push(turn.node)
         } else {
-            const lastMrxTurn = this.turns.filter(t => t.type === "mrx").at(-1) as MrXTurn
-            if (lastMrxTurn === undefined) {
-                // First Mr.X move: he can be anywhere!
-                possibleNodes.push(...Object.keys(this.board.nodes).map(parseInt))
-            } else {
-                for (const node of lastMrxTurn.possibleNodes) {
-                    possibleNodes.push(...this.board.getLinksForTicket(node, turn.ticket))
-                }
+            const oldPossiblePositions = this.getPossibleMrXPositions()
+            for (const node of oldPossiblePositions) {
+                possibleNodes.push(...this.getPossibleMoves(node, turn.ticket))
             }
         }
-
-        // Exclude from possible nodes the ones where players are currently in
-        possibleNodes = this.excludePlayerNodes(possibleNodes)
 
         this.turns.push({
             ...turn,
@@ -99,28 +92,46 @@ export default class Game {
         })
     }
 
-    private addPlayerTurn(turn: PlayerTurn) {
+    addPlayerTurn(turn: Omit<PlayerTurn, "type">) {
         // Check it's my turn
         this.checkNextTurn(turn.player)
 
         // Check if move is right
         const currentNode = this.getCurrentPlayerNode(turn.player)
-        const possibleMoves = this.excludePlayerNodes(this.board.getLinksForTicket(currentNode, turn.ticket))
+        const possibleMoves = this.getPossibleMoves(currentNode, turn.ticket)
         if (!possibleMoves.includes(turn.node)) {
-            throw new InvalidMoveError(`Player ${turn.player.name} wrongly moved to ${turn.node} while he could only move to ${possibleMoves}`)
+            throw new InvalidMoveError(`Player ${turn.player.name} wrongly moved to ${turn.node} by ${turn.ticket} while he could only move to ${possibleMoves}`)
         }
 
         // If move is correct, add to turns
-        this.turns.push(turn)
+        this.turns.push({
+            type: "player",
+            ...turn
+        })
+
+        // If player moves into one the last possible Mr. X's nodes, remove that node from the possible list
+        const lastMrXTurn = this.getLastMrXTurn()
+        if (lastMrXTurn !== undefined && lastMrXTurn.possibleNodes.includes(turn.node)) {
+            lastMrXTurn.possibleNodes = lastMrXTurn.possibleNodes.filter(n => n != turn.node)
+        }
+    }
+
+    private getLastMrXTurn() {
+        return last(this.turns.filter(t => t.type === "mrx")) as MrXTurn | undefined
+    }
+
+    getPossibleMrXPositions() {
+        const lastMrxTurn = this.getLastMrXTurn()
+        return lastMrxTurn?.possibleNodes ?? this.excludePlayerNodes(this.board.nodeIds())
     }
 }
 
 type MrXTurn = {
     type: "mrx"
     ticket: TicketTypeId
-    node: number | null
+    node?: number
+    isDouble?: boolean
     possibleNodes: number[]
-    isDouble: boolean
 }
 
 type PlayerTurn = {
@@ -132,8 +143,16 @@ type PlayerTurn = {
 
 type Turn = MrXTurn | PlayerTurn
 
-class InvalidTurnError extends Error {
+export class InvalidTurnError extends Error {
+
+    constructor(message: string) {
+        super(message)
+    }
 }
 
-class InvalidMoveError extends Error {
+export class InvalidMoveError extends Error {
+
+    constructor(message: string) {
+        super(message)
+    }
 }

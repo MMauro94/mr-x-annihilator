@@ -7,10 +7,14 @@ export class Board {
         public readonly nodes: BoardNode
     ) {}
 
+    nodeIds() {
+        return Object.keys(this.nodes).map(n => parseInt(n))
+    }
+
     getLinksForTicket(node: number, ticket: TicketTypeId): number[] {
         const links = this.nodes[node]
         if (links === undefined) {
-            throw new Error("Invalid node")
+            throw new Error(`Invalid node ${node}`)
         }
 
         const possibleTransportations = Object.entries(TRANSPORTATION_TYPE_INFO)
