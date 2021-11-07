@@ -1,20 +1,38 @@
-import {Board} from "../utils/board";
+import {Board} from "./Board";
 import {Player} from "./Player";
-import {TicketTypeId} from "../utils/transportation";
+import {TICKET_TYPES, TicketTypeId} from "../utils/transportation";
 import {last} from "../utils/array";
+import EventEmitter from "events";
 
-export default class Game {
+export default class Game extends EventEmitter {
 
     private turns: Turn[] = []
-    private won = false
 
     constructor(
         public readonly board: Board,
         public readonly players: Player[] // Players (Mr. X excluded)
     ) {
+        super()
         if (this.players.length <= 1) {
             throw new Error("At least two players")
         }
+    }
+
+    playerIndex(player: "mrx" | Player): "mrx" | number {
+        if (player === "mrx") return player
+        const index = this.players.indexOf(player)
+        if (index >= 0) {
+            return index
+        } else {
+            throw new Error("Player not in game")
+        }
+    }
+
+    player(index: number) {
+        if (index < this.players.length) {
+            return this.players[index]
+        }
+        throw new Error(`Player with index ${index} not in game`)
     }
 
     nextTurn(): "mrx" | Player {
@@ -79,8 +97,8 @@ export default class Game {
             // I have the current Mr. X position, no need to guess
             possibleNodes.push(turn.node)
         } else {
-            const oldPossiblePositions = this.getPossibleMrXPositions()
-            for (const node of oldPossiblePositions) {
+            const oldPossibleNodes = this.getPossibleMrXNodes()
+            for (const node of oldPossibleNodes) {
                 possibleNodes.push(...this.getPossibleMoves(node, turn.ticket))
             }
         }
@@ -90,9 +108,10 @@ export default class Game {
             type: "mrx",
             possibleNodes
         })
+        this.emit("turn")
     }
 
-    addPlayerTurn(turn: Omit<PlayerTurn, "type">) {
+    addPlayerTurn(turn: Omit<PlayerTurn, "type" | "removedPossibleNodes">) {
         // Check it's my turn
         this.checkNextTurn(turn.player)
 
@@ -103,26 +122,41 @@ export default class Game {
             throw new InvalidMoveError(`Player ${turn.player.name} wrongly moved to ${turn.node} by ${turn.ticket} while he could only move to ${possibleMoves}`)
         }
 
+        // If player moves into one the last possible Mr. X's nodes, remove that node from the possible list
+        const lastMrXTurn = this.getLastMrXTurn()
+        let removedPossibleNodes: number[] = []
+        if (lastMrXTurn !== undefined && lastMrXTurn.possibleNodes.includes(turn.node)) {
+            removedPossibleNodes = lastMrXTurn.possibleNodes.filter(n => n === turn.node)
+            lastMrXTurn.possibleNodes = lastMrXTurn.possibleNodes.filter(n => n !== turn.node)
+        }
+
         // If move is correct, add to turns
         this.turns.push({
             type: "player",
+            removedPossibleNodes,
             ...turn
         })
 
-        // If player moves into one the last possible Mr. X's nodes, remove that node from the possible list
-        const lastMrXTurn = this.getLastMrXTurn()
-        if (lastMrXTurn !== undefined && lastMrXTurn.possibleNodes.includes(turn.node)) {
-            lastMrXTurn.possibleNodes = lastMrXTurn.possibleNodes.filter(n => n != turn.node)
-        }
+        this.emit("turn")
     }
 
     private getLastMrXTurn() {
         return last(this.turns.filter(t => t.type === "mrx")) as MrXTurn | undefined
     }
 
-    getPossibleMrXPositions() {
+    getPossibleMrXNodes() {
         const lastMrxTurn = this.getLastMrXTurn()
         return lastMrxTurn?.possibleNodes ?? this.excludePlayerNodes(this.board.nodeIds())
+    }
+
+    getPossiblePlayerMoves(): Record<number, Record<TicketTypeId, number[]>> {
+        return Object.fromEntries(this.players.map(player => ([
+            this.playerIndex(player),
+            Object.fromEntries(TICKET_TYPES.map(ticketType => ([
+                ticketType,
+                this.getPossibleMoves(this.getCurrentPlayerNode(player), ticketType)
+            ]))) as Record<TicketTypeId, number[]>
+        ])))
     }
 }
 
@@ -139,6 +173,7 @@ type PlayerTurn = {
     player: Player
     ticket: TicketTypeId
     node: number
+    removedPossibleNodes: number[]
 }
 
 type Turn = MrXTurn | PlayerTurn

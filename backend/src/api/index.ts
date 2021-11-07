@@ -1,4 +1,6 @@
-import {router} from "../utils/express";
+import {APP} from "../utils/app";
+import game from "./game";
 
-export default router(r => {
+export default APP.router(r => {
+    r.use("/game", game)
 })

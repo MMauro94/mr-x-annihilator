@@ -1,4 +1,4 @@
-import {NextFunction, Request, RequestHandler, Response, Router} from "express";
+import express, {NextFunction, Request, RequestHandler, Response} from "express";
 import {validationResult} from "express-validator";
 
 /**
@@ -24,19 +24,13 @@ export function validate(...checks: RequestHandler[]): RequestHandler {
  * Utility function to create a new express router.
  * Creates a new router, calls the passed function with it as parameter and returns it
  */
-export function router(f: (router: Router) => void) {
-    const router = Router({mergeParams: true})
+export function router(f: (router: express.Router) => void) {
+    const router = express.Router()
     f(router)
     return router
 }
 
-export type HttpMethod = "get" | "post" | "put" | "patch" | "delete" | "head"
 
-export function page(method: HttpMethod, path: string, handlers: RequestHandler[], handler: (req: Request, res: Response) => Promise<void>) {
-    return (r: Router) => {
-        r[method](path, handlers, handler)
-    }
-}
 
 function composeMiddlewares(middleware: RequestHandler[]): RequestHandler {
     return middleware.reduce((a, b) => {

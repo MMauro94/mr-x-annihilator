@@ -1,6 +1,6 @@
 import Game, {InvalidMoveError, InvalidTurnError} from "../src/datastruct/Game";
-import standardBoard from "../src/utils/boards/standard-board";
 import {distinct, NUM_CMP} from "../src/utils/array";
+import {RAVENSBURGER_MISSING_108} from "../src/datastruct/boards/ravensburger-missing-108";
 
 test('testGame', () => {
 
@@ -24,7 +24,7 @@ test('testGame', () => {
     }
     // Mr. X starts on 23
 
-    const game = new Game(standardBoard(), [player1, player2, player3])
+    const game = new Game(RAVENSBURGER_MISSING_108, [player1, player2, player3])
 
 
     // Check player positions
@@ -38,13 +38,13 @@ test('testGame', () => {
     expect(() => game.addPlayerTurn({player: player1, ticket: "taxi", node: 47})).toThrow(InvalidTurnError)
 
 
-    expect(distinct(game.getPossibleMrXPositions()).sort(NUM_CMP))
+    expect(distinct(game.getPossibleMrXNodes()).sort(NUM_CMP))
         .toEqual(distinct(game.board.nodeIds().filter(n => !playerInitialNodes.includes(n))).sort(NUM_CMP))
 
 
     // First round
     game.addMrXTurn({ticket: "taxi"}) // Goes to 37
-    expect(game.getPossibleMrXPositions().includes(37)).toBe(true)
+    expect(game.getPossibleMrXNodes().includes(37)).toBe(true)
     expect(game.nextTurn()).toEqual(player1)
 
     expect(() => game.addPlayerTurn({player: player1, ticket: "taxi", node: 46})).toThrow(InvalidMoveError)
@@ -55,7 +55,7 @@ test('testGame', () => {
 
     // Second round
     game.addMrXTurn({ticket: "taxi", node: 50}) // Goes to 50
-    expect(game.getPossibleMrXPositions()).toEqual([50])
+    expect(game.getPossibleMrXNodes()).toEqual([50])
 
     game.addPlayerTurn({player: player1, ticket: "taxi", node: 34})
     game.addPlayerTurn({player: player2, ticket: "taxi", node: 24})
@@ -64,7 +64,7 @@ test('testGame', () => {
 
     // Third round
     game.addMrXTurn({ticket: "taxi"}) // Goes to 49
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([37, 38, 49])
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([37, 38, 49])
 
     game.addPlayerTurn({player: player1, ticket: "bus", node: 63})
     game.addPlayerTurn({player: player2, ticket: "taxi", node: 37})
@@ -73,7 +73,7 @@ test('testGame', () => {
 
     // Fourth round
     game.addMrXTurn({ticket: "taxi"}) // Goes to 66
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([
         /*37*/ [/* empty because because player 2 moved into it */],
         /*38*/ [24, 25, 50, 51],
         /*49*/ [36, 50, 66]
@@ -86,7 +86,7 @@ test('testGame', () => {
 
     // Fifth round
     game.addMrXTurn({ticket: "taxi"}) // Goes to 67
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([
         /*37*/ [],
         /*38*/ [
             /*24*/ [37, 38],
@@ -108,7 +108,7 @@ test('testGame', () => {
 
     // Fifth round
     game.addMrXTurn({ticket: "underground"}) // Goes to 89
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([
         /*38*/ [
             /*24*/ [
                 /*37*/ [/* no underground */],
@@ -148,7 +148,7 @@ test('testGame', () => {
 
     // Sixth round
     game.addMrXTurn({ticket: "bus", node: 105}) // Goes to 105
-    expect(game.getPossibleMrXPositions()).toEqual([105])
+    expect(game.getPossibleMrXNodes()).toEqual([105])
 
     game.addPlayerTurn({player: player1, ticket: "bus", node: 111})
     game.addPlayerTurn({player: player2, ticket: "taxi", node: 13})
@@ -157,7 +157,7 @@ test('testGame', () => {
 
     // Sixth round
     game.addMrXTurn({ticket: "taxi"}) // Goes to 118
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([89, 90, 91, 106, 118])
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([89, 90, 91, 106, 118])
 
     game.addPlayerTurn({player: player1, ticket: "underground", node: 67})
     game.addPlayerTurn({player: player2, ticket: "underground", node: 89})
@@ -166,7 +166,7 @@ test('testGame', () => {
 
     // Seventh round
     game.addMrXTurn({ticket: "black", isDouble: true}) // Goes to 115
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([
         /*89*/ [/* empty because because player 2 moved into it */],
         /*90*/ [72, 91],
         /*91*/ [56, 72, 90, 107],
@@ -178,7 +178,7 @@ test('testGame', () => {
     expect(() => game.addPlayerTurn({player: player1, ticket: "bus", node: 102})).toThrow(InvalidTurnError)
 
     game.addMrXTurn({ticket: "black"}) // Goes to 157
-    expect(game.getPossibleMrXPositions().sort(NUM_CMP)).toEqual([
+    expect(game.getPossibleMrXNodes().sort(NUM_CMP)).toEqual([
         /*90*/ [
             /*72*/ [42, 42, 71, 90, 91, 107],
             /*91*/ [56, 72, 90, 107],

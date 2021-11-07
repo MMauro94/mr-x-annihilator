@@ -1,4 +1,5 @@
-export type TicketTypeId = "taxi" | "bus" | "underground" | "black"
+export const TICKET_TYPES = ["taxi", "bus", "underground", "black"] as const
+export type TicketTypeId = typeof TICKET_TYPES[number]
 
 
 export type TransportationTypeId = "taxi" | "bus" | "underground" | "ferry"
