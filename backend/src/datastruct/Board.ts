@@ -4,6 +4,7 @@ export type BoardNodes = Readonly<Record<number, Partial<Readonly<Record<Transpo
 
 export class Board {
     constructor(
+        public readonly name: string,
         public readonly nodes: BoardNodes
     ) {
     }

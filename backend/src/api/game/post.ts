@@ -10,7 +10,7 @@ export default APP.page(r => {
     r.post("/", ...[
         validate(
             body("board").isIn(Object.keys(BOARDS)),
-            body("players").isArray(),
+            body("players").isArray({min: 2}),
             body("players.*.name").isString().isLength({min: 1}),
             body("players.*.color").isHexColor(),
             body("players.*.initialNode").isInt({min: 1}).toInt(),

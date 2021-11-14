@@ -1,6 +1,7 @@
 import {Board} from "../Board";
 
 export const RAVENSBURGER_MISSING_108 = new Board(
+    "Ravensburger edition (with missing 108 position)",
     {
         1: {
             taxi: [8, 9],
